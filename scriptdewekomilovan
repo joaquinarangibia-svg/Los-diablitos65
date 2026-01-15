@@ -1,0 +1,77 @@
+local Players = game:GetService("Players")
+
+local BAR_COLOR = Color3.fromRGB(0, 170, 255)
+
+local function createHealthBar(character)
+	local humanoid = character:WaitForChild("Humanoid")
+	local head = character:WaitForChild("Head")
+	local player = Players:GetPlayerFromCharacter(character)
+
+	-- BillboardGui (VISIBLE DE LEJOS Y A TRAVÉS DE PAREDES)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Adornee = head
+	billboard.Size = UDim2.new(0, 120, 0, 35) -- tamaño fijo
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 2.6, 0)
+	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = 0 -- infinito
+	billboard.Parent = head
+
+	-- Fondo (barra)
+	local background = Instance.new("Frame")
+	background.Size = UDim2.new(1, 0, 0.35, 0)
+	background.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	background.BorderSizePixel = 0
+	background.Parent = billboard
+
+	local bgCorner = Instance.new("UICorner")
+	bgCorner.CornerRadius = UDim.new(0, 6)
+	bgCorner.Parent = background
+
+	-- Barra azul (SIEMPRE AZUL)
+	local bar = Instance.new("Frame")
+	bar.Size = UDim2.new(1, 0, 1, 0)
+	bar.BackgroundColor3 = BAR_COLOR
+	bar.BorderSizePixel = 0
+	bar.Parent = background
+
+	local barCorner = Instance.new("UICorner")
+	barCorner.CornerRadius = UDim.new(0, 6)
+	barCorner.Parent = bar
+
+	-- Nombre pequeño abajo
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, 0, 0.35, 0)
+	nameLabel.Position = UDim2.new(0, 0, 0.4, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.TextScaled = true
+	nameLabel.Font = Enum.Font.Gotham
+	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	nameLabel.Text = player and player.Name or "Jugador"
+	nameLabel.Parent = billboard
+
+	-- Actualizar vida (solo tamaño)
+	local function updateHealth()
+		bar.Size = UDim2.new(
+			math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1),
+			0,
+			1,
+			0
+		)
+	end
+
+	humanoid.HealthChanged:Connect(updateHealth)
+	updateHealth()
+end
+
+-- Nuevos jugadores
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(createHealthBar)
+end)
+
+-- Jugadores actuales
+for _, player in ipairs(Players:GetPlayers()) do
+	if player.Character then
+		createHealthBar(player.Character)
+	end
+	player.CharacterAdded:Connect(createHealthBar)
+end
