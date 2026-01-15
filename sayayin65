@@ -1,0 +1,372 @@
+-- LOS SAYAYINES | FINAL DEFINITIVO
+
+-- ================= SERVICES =================
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local lp = Players.LocalPlayer
+local Cam = workspace.CurrentCamera
+
+-- ================= CONFIG =================
+local Config = {
+	AimKey = Enum.KeyCode.X,
+	AimMouse = nil,
+	AimToggle = false,
+	TargetPart = "Head",
+	IgnoreFriends = true,
+	Disimulator = 5,
+	FOV = 180,
+	ShowFOV = true,
+	HideGUIKey = Enum.KeyCode.F4,
+	HideFOVKey = Enum.KeyCode.M,
+	LockedTarget = nil,
+
+	FOVColorMode = "RGB", -- RGB / CUSTOM
+	FOVCustomColor = Color3.fromRGB(255,255,255)
+}
+
+-- ================= GUI =================
+local gui = Instance.new("ScreenGui", lp.PlayerGui)
+gui.ResetOnSpawn = false
+
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0,760,0,460)
+main.Position = UDim2.new(0.22,0,0.18,0)
+main.BackgroundColor3 = Color3.fromRGB(235,235,235)
+main.Active = true
+main.Draggable = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,14)
+
+-- ================= BORDER =================
+local stroke = Instance.new("UIStroke", main)
+stroke.Thickness = 3
+RS.RenderStepped:Connect(function()
+	local t = tick()*2
+	stroke.Color = Color3.fromRGB(
+		0,
+		150 + math.sin(t)*105,
+		150 + math.cos(t)*105
+	)
+end)
+
+-- ================= TITLE (RAINBOW) =================
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1,0,0,42)
+title.Text = "LOS SAYAYINES"
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 32
+title.BackgroundTransparency = 1
+
+local subtitle = Instance.new("TextLabel", main)
+subtitle.Size = UDim2.new(1,0,0,22)
+subtitle.Position = UDim2.new(0,0,0,38)
+subtitle.Text = "THE SOUTH BRONX  •  THE TRENCHES"
+subtitle.Font = Enum.Font.GothamBold
+subtitle.TextSize = 14
+subtitle.TextColor3 = Color3.fromRGB(120,120,120)
+subtitle.BackgroundTransparency = 1
+
+local titleHue = 0
+
+-- ================= TABS =================
+local tabs = {"AIM","COMBAT","CONFIG"}
+local pages = {}
+
+for i,name in ipairs(tabs) do
+	local b = Instance.new("TextButton", main)
+	b.Size = UDim2.new(0,160,0,44)
+	b.Position = UDim2.new(0,15,0,70 + (i-1)*55)
+	b.Text = name
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 20
+	b.TextColor3 = Color3.new(1,1,1)
+	b.BackgroundColor3 = Color3.fromRGB(30,30,30)
+	Instance.new("UICorner", b)
+
+	local page = Instance.new("Frame", main)
+	page.Position = UDim2.new(0,190,0,70)
+	page.Size = UDim2.new(1,-205,1,-85)
+	page.Visible = i == 1
+	page.BackgroundTransparency = 1
+	pages[name] = page
+
+	b.MouseButton1Click:Connect(function()
+		for _,p in pairs(pages) do p.Visible = false end
+		page.Visible = true
+	end)
+end
+
+-- ================= AIM =================
+local aim = pages.AIM
+
+-- AIM KEY
+local aimKeyBtn = Instance.new("TextButton", aim)
+aimKeyBtn.Size = UDim2.new(0,320,0,46)
+aimKeyBtn.Text = "AIM KEY : X"
+aimKeyBtn.Font = Enum.Font.GothamBold
+aimKeyBtn.TextSize = 18
+aimKeyBtn.TextColor3 = Color3.new(1,1,1)
+aimKeyBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Instance.new("UICorner", aimKeyBtn)
+
+aimKeyBtn.MouseButton1Click:Connect(function()
+	aimKeyBtn.Text = "PRESIONA TECLA O MOUSE..."
+	local c; c = UIS.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.Keyboard then
+			Config.AimKey = i.KeyCode
+			Config.AimMouse = nil
+			aimKeyBtn.Text = "AIM KEY : "..i.KeyCode.Name
+			c:Disconnect()
+		elseif i.UserInputType == Enum.UserInputType.MouseButton1
+			or i.UserInputType == Enum.UserInputType.MouseButton2
+			or i.UserInputType == Enum.UserInputType.MouseButton3 then
+			Config.AimMouse = i.UserInputType
+			Config.AimKey = nil
+			aimKeyBtn.Text = "AIM KEY : "..i.UserInputType.Name
+			c:Disconnect()
+		end
+	end)
+end)
+
+-- IGNORE FRIENDS
+local ignoreBtn = Instance.new("TextButton", aim)
+ignoreBtn.Position = UDim2.new(0,0,0,60)
+ignoreBtn.Size = UDim2.new(0,320,0,46)
+ignoreBtn.Text = "IGNORE FRIENDS : ON"
+ignoreBtn.Font = Enum.Font.GothamBold
+ignoreBtn.TextSize = 18
+ignoreBtn.TextColor3 = Color3.new(1,1,1)
+ignoreBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Instance.new("UICorner", ignoreBtn)
+
+ignoreBtn.MouseButton1Click:Connect(function()
+	Config.IgnoreFriends = not Config.IgnoreFriends
+	ignoreBtn.Text = "IGNORE FRIENDS : "..(Config.IgnoreFriends and "ON" or "OFF")
+end)
+
+-- ===== FOV COLOR OPTIONS (AIM) =====
+local fovModeBtn = Instance.new("TextButton", aim)
+fovModeBtn.Position = UDim2.new(0,0,0,120)
+fovModeBtn.Size = UDim2.new(0,320,0,46)
+fovModeBtn.Text = "FOV COLOR : RGB"
+fovModeBtn.Font = Enum.Font.GothamBold
+fovModeBtn.TextSize = 18
+fovModeBtn.TextColor3 = Color3.new(1,1,1)
+fovModeBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Instance.new("UICorner", fovModeBtn)
+
+fovModeBtn.MouseButton1Click:Connect(function()
+	if Config.FOVColorMode == "RGB" then
+		Config.FOVColorMode = "CUSTOM"
+		fovModeBtn.Text = "FOV COLOR : CUSTOM"
+	else
+		Config.FOVColorMode = "RGB"
+		fovModeBtn.Text = "FOV COLOR : RGB"
+	end
+end)
+
+local fovColors = {
+	Color3.fromRGB(255,0,0),
+	Color3.fromRGB(0,255,0),
+	Color3.fromRGB(0,0,255),
+	Color3.fromRGB(255,255,0),
+	Color3.fromRGB(0,255,255),
+	Color3.fromRGB(255,255,255)
+}
+local fci = 1
+
+local fovColorBtn = Instance.new("TextButton", aim)
+fovColorBtn.Position = UDim2.new(0,0,0,180)
+fovColorBtn.Size = UDim2.new(0,320,0,46)
+fovColorBtn.Text = "CAMBIAR COLOR FOV"
+fovColorBtn.Font = Enum.Font.GothamBold
+fovColorBtn.TextSize = 18
+fovColorBtn.TextColor3 = Color3.new(1,1,1)
+fovColorBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Instance.new("UICorner", fovColorBtn)
+
+fovColorBtn.MouseButton1Click:Connect(function()
+	fci = fci % #fovColors + 1
+	Config.FOVCustomColor = fovColors[fci]
+	Config.FOVColorMode = "CUSTOM"
+	fovModeBtn.Text = "FOV COLOR : CUSTOM"
+end)
+
+-- ================= COMBAT =================
+local combat = pages.COMBAT
+
+local function Slider(parent,y,text,min,max,start,callback)
+	local label = Instance.new("TextLabel", parent)
+	label.Position = UDim2.new(0,0,0,y)
+	label.Size = UDim2.new(0,320,0,22)
+	label.Text = text..": "..start
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 16
+	label.TextColor3 = Color3.fromRGB(0,0,0)
+	label.BackgroundTransparency = 1
+
+	local bar = Instance.new("Frame", parent)
+	bar.Position = UDim2.new(0,0,0,y+26)
+	bar.Size = UDim2.new(0,320,0,20)
+	bar.BackgroundColor3 = Color3.fromRGB(180,180,180)
+	Instance.new("UICorner", bar)
+
+	local fill = Instance.new("Frame", bar)
+	fill.Size = UDim2.new((start-min)/(max-min),0,1,0)
+	fill.BackgroundColor3 = Color3.fromRGB(0,170,255)
+	Instance.new("UICorner", fill)
+
+	local drag = false
+	bar.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true end
+	end)
+	UIS.InputEnded:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end
+	end)
+	UIS.InputChanged:Connect(function(i)
+		if drag and i.UserInputType == Enum.UserInputType.MouseMovement then
+			local p = math.clamp((i.Position.X - bar.AbsolutePosition.X)/bar.AbsoluteSize.X,0,1)
+			local v = math.floor(min + p*(max-min))
+			fill.Size = UDim2.new(p,0,1,0)
+			label.Text = text..": "..v
+			callback(v)
+		end
+	end)
+end
+
+Slider(combat,0,"DISIMULADOR",1,9,Config.Disimulator,function(v)
+	Config.Disimulator = v
+end)
+
+Slider(combat,80,"FOV",0,360,Config.FOV,function(v)
+	Config.FOV = v
+end)
+
+-- ================= CONFIG =================
+local cfg = pages.CONFIG
+
+local info1 = Instance.new("TextLabel", cfg)
+info1.Size = UDim2.new(0,320,0,30)
+info1.Text = "OCULTAR / MOSTRAR GUI : F4"
+info1.Font = Enum.Font.GothamBold
+info1.TextSize = 18
+info1.TextColor3 = Color3.fromRGB(0,0,0)
+info1.BackgroundTransparency = 1
+
+local info2 = Instance.new("TextLabel", cfg)
+info2.Position = UDim2.new(0,0,0,34)
+info2.Size = UDim2.new(0,320,0,30)
+info2.Text = "OCULTAR / MOSTRAR FOV : M"
+info2.Font = Enum.Font.GothamBold
+info2.TextSize = 18
+info2.TextColor3 = Color3.fromRGB(0,0,0)
+info2.BackgroundTransparency = 1
+
+local themes = {
+	NEGRO = Color3.fromRGB(18,18,18),
+	BLANCO = Color3.fromRGB(210,210,210),
+	VERDE = Color3.fromRGB(0,90,70),
+	AZUL = Color3.fromRGB(0,70,130)
+}
+
+local y = 80
+for name,color in pairs(themes) do
+	local btn = Instance.new("TextButton", cfg)
+	btn.Position = UDim2.new(0,0,0,y)
+	btn.Size = UDim2.new(0,320,0,42)
+	btn.Text = "FONDO : "..name
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 16
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	Instance.new("UICorner", btn)
+
+	btn.MouseButton1Click:Connect(function()
+		main.BackgroundColor3 = color
+	end)
+
+	y += 48
+end
+
+-- ================= FOV DRAW + TITLE RAINBOW =================
+local fovCircle = Drawing.new("Circle")
+fovCircle.Thickness = 2
+fovCircle.Filled = false
+local hue = 0
+
+local function GetTarget()
+	local closest, dist = nil, Config.FOV
+	for _,plr in pairs(Players:GetPlayers()) do
+		if plr ~= lp and plr.Character and plr.Character:FindFirstChild(Config.TargetPart) then
+			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+			if hum and hum.Health > 0 then
+				if not (Config.IgnoreFriends and lp:IsFriendsWith(plr.UserId)) then
+					local part = plr.Character[Config.TargetPart]
+					local pos, vis = Cam:WorldToViewportPoint(part.Position)
+					if vis then
+						local mag = (Vector2.new(pos.X,pos.Y) - UIS:GetMouseLocation()).Magnitude
+						if mag < dist then
+							dist = mag
+							closest = part
+						end
+					end
+				end
+			end
+		end
+	end
+	return closest
+end
+
+RS.RenderStepped:Connect(function(dt)
+	-- TITLE RGB
+	titleHue = (titleHue + dt * 0.25) % 1
+	title.TextColor3 = Color3.fromHSV(titleHue,1,1)
+
+	-- FOV
+	local m = UIS:GetMouseLocation()
+	fovCircle.Position = Vector2.new(m.X,m.Y)
+	fovCircle.Radius = Config.FOV
+	fovCircle.Visible = Config.ShowFOV
+
+	if Config.FOVColorMode == "RGB" then
+		hue = (hue + dt * 0.25) % 1
+		fovCircle.Color = Color3.fromHSV(hue,1,1)
+	else
+		fovCircle.Color = Config.FOVCustomColor
+	end
+
+	-- AIM
+	if Config.AimToggle then
+		if not Config.LockedTarget or not Config.LockedTarget.Parent then
+			Config.LockedTarget = GetTarget()
+		end
+		if Config.LockedTarget then
+			local smooth = math.clamp(1 / Config.Disimulator, 0.02, 1)
+			Cam.CFrame = Cam.CFrame:Lerp(
+				CFrame.new(Cam.CFrame.Position, Config.LockedTarget.Position),
+				smooth
+			)
+		end
+	end
+end)
+
+-- ================= INPUT =================
+UIS.InputBegan:Connect(function(i,gp)
+	if gp then return end
+
+	if (Config.AimKey and i.KeyCode == Config.AimKey)
+	or (Config.AimMouse and i.UserInputType == Config.AimMouse) then
+		Config.AimToggle = not Config.AimToggle
+		if not Config.AimToggle then
+			Config.LockedTarget = nil
+		end
+	end
+
+	if i.KeyCode == Config.HideGUIKey then
+		main.Visible = not main.Visible
+	end
+
+	if i.KeyCode == Config.HideFOVKey then
+		Config.ShowFOV = not Config.ShowFOV
+	end
+end)
